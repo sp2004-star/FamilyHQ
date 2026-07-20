@@ -48,11 +48,16 @@ export default function FamilySettings() {
     if (!inviteEmail.trim()) return;
     setInviting(true);
     try {
-      await api.inviteMember(currentFamily.id, { email: inviteEmail.trim() });
+      const result = await api.inviteMember(currentFamily.id, { email: inviteEmail.trim() });
       setInviteEmail('');
       const inv = await api.getInvites(currentFamily.id);
       setInvites(inv);
-      alert('Invite sent successfully!');
+      if (result.inviteLink) {
+        const copied = await navigator.clipboard.writeText(result.inviteLink).then(() => true).catch(() => false);
+        alert(copied ? `Invite sent! Link copied to clipboard:\n${result.inviteLink}` : `Invite sent! Share this link:\n${result.inviteLink}`);
+      } else {
+        alert('Invite sent successfully!');
+      }
     } catch (err) {
       alert(err.message);
     } finally {
@@ -234,9 +239,21 @@ export default function FamilySettings() {
                     </p>
                   </div>
                   {invite.status === 'pending' && (
-                    <button onClick={() => handleResendInvite(invite.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 rounded-lg font-medium">
-                      <RotateCcw className="w-3 h-3" /> Resend
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          const link = `${window.location.origin}/invite/${invite.token}`;
+                          navigator.clipboard.writeText(link);
+                          alert('Invite link copied!');
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                      >
+                        Copy Link
+                      </button>
+                      <button onClick={() => handleResendInvite(invite.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 rounded-lg font-medium">
+                        <RotateCcw className="w-3 h-3" /> Resend
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}

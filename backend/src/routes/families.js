@@ -140,7 +140,7 @@ router.post('/:id/invite', authMiddleware, async (req, res) => {
     inviteLink,
   });
 
-  res.status(201).json({ message: 'Invite sent successfully', inviteId });
+  res.status(201).json({ message: 'Invite sent successfully', inviteId, inviteLink });
 });
 
 // Resend an invite
