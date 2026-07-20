@@ -4,7 +4,7 @@
   "description": "Family Document Vault - Secure document storage for families",
   "scripts": {
     "install:all": "cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npx vite build",
+    "build": "cd frontend && npx --yes vite build",
     "start": "cd backend && node src/index.js",
     "dev": "cd backend && npm run dev"
   },
