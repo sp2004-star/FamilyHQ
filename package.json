@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Family Document Vault - Secure document storage for families",
   "scripts": {
-    "install:all": "cd backend && npm install --production && cd ../frontend && npm install --include=dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npx vite build",
+    "start": "cd backend && node src/index.js",
     "dev": "cd backend && npm run dev"
   },
   "engines": {
