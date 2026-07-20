@@ -46,7 +46,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // Serve frontend in production
 const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
 app.use(express.static(frontendPath));
-app.get('*', (req, res, next) => {
+app.get('/{*splat}', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
