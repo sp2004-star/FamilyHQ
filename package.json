@@ -1,0 +1,14 @@
+{
+  "name": "familyhq",
+  "version": "1.0.0",
+  "description": "Family Document Vault - Secure document storage for families",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

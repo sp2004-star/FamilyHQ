@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: familyhq
+    runtime: node
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://familyhq.onrender.com
+      - key: PORT
+        value: 3001
+    disk:
+      name: familyhq-data
+      mountPath: /opt/render/project/src/backend/data
+      sizeGB: 1
+    healthCheckPath: /api/health
