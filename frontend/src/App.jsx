@@ -26,7 +26,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-      <Route path="/invite/:token" element={<InvitePage />} />
+      <Route path="/j/:token" element={<InvitePage />} />
       <Route path="/shared/:token" element={<SharedDocument />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />

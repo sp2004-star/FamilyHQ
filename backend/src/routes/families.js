@@ -105,7 +105,7 @@ router.post('/:id/invite', authMiddleware, async (req, res) => {
     [inviteId, req.params.id, '', token, req.user.id, expiresAt]
   );
 
-  const inviteLink = `${process.env.FRONTEND_URL || ''}/invite/${token}`;
+  const inviteLink = `${process.env.FRONTEND_URL || ''}/j/${token}`;
 
   res.status(201).json({ message: 'Invite link created', inviteId, inviteLink });
 });
@@ -129,7 +129,7 @@ router.post('/:id/invite/:inviteId/resend', authMiddleware, async (req, res) => 
 
   await db.run("UPDATE invites SET token = ?, expires_at = ?, status = 'pending' WHERE id = ?", [newToken, newExpiry, invite.id]);
 
-  const inviteLink = `${process.env.FRONTEND_URL || ''}/invite/${newToken}`;
+  const inviteLink = `${process.env.FRONTEND_URL || ''}/j/${newToken}`;
 
   res.json({ message: 'New invite link generated', inviteLink });
 });

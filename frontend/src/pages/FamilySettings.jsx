@@ -237,7 +237,7 @@ export default function FamilySettings() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => {
-                          const link = `${window.location.origin}/invite/${invite.token}`;
+                          const link = `${window.location.origin}/j/${invite.token}`;
                           navigator.clipboard.writeText(link);
                           alert('Invite link copied!');
                         }}
