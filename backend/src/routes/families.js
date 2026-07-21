@@ -6,6 +6,16 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Generate a clean short token like nDoMaU_x1Kw
+function generateToken() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = crypto.randomBytes(10);
+  let p1 = '', p2 = '';
+  for (let i = 0; i < 6; i++) p1 += chars[bytes[i] % 62];
+  for (let i = 6; i < 10; i++) p2 += chars[bytes[i] % 62];
+  return p1 + '_' + p2;
+}
+
 // Create a new family
 router.post('/', authMiddleware, async (req, res) => {
   const { name } = req.body;
@@ -96,7 +106,7 @@ router.post('/:id/invite', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Only admins can invite members' });
   }
 
-  const token = crypto.randomBytes(8).toString('base64url');
+  const token = generateToken();
   const inviteId = uuidv4();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -124,7 +134,7 @@ router.post('/:id/invite/:inviteId/resend', authMiddleware, async (req, res) => 
   const invite = await db.get('SELECT * FROM invites WHERE id = ? AND family_id = ?', [req.params.inviteId, req.params.id]);
   if (!invite) return res.status(404).json({ error: 'Invite not found' });
 
-  const newToken = crypto.randomBytes(8).toString('base64url');
+  const newToken = generateToken();
   const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   await db.run("UPDATE invites SET token = ?, expires_at = ?, status = 'pending' WHERE id = ?", [newToken, newExpiry, invite.id]);
