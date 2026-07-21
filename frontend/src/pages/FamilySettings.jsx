@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFamily } from '../context/FamilyContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import { Users, Crown, UserMinus, Mail, RotateCcw, Bell, Check, Trash2, Edit3, Save, X } from 'lucide-react';
+import { Users, Crown, UserMinus, Link2, Mail, RotateCcw, Bell, Check, Trash2, Edit3, Save, X } from 'lucide-react';
 
 export default function FamilySettings() {
   const { currentFamily, loadFamilies, switchFamily } = useFamily();
@@ -10,9 +10,8 @@ export default function FamilySettings() {
   const [familyData, setFamilyData] = useState(null);
   const [invites, setInvites] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [tab, setTab] = useState('members');
@@ -43,20 +42,15 @@ export default function FamilySettings() {
     }
   };
 
-  const handleInvite = async (e) => {
-    e.preventDefault();
-    if (!inviteEmail.trim()) return;
+  const handleInvite = async () => {
     setInviting(true);
     try {
-      const result = await api.inviteMember(currentFamily.id, { email: inviteEmail.trim() });
-      setInviteEmail('');
+      const result = await api.inviteMember(currentFamily.id, {});
       const inv = await api.getInvites(currentFamily.id);
       setInvites(inv);
       if (result.inviteLink) {
-        const copied = await navigator.clipboard.writeText(result.inviteLink).then(() => true).catch(() => false);
-        alert(copied ? `Invite sent! Link copied to clipboard:\n${result.inviteLink}` : `Invite sent! Share this link:\n${result.inviteLink}`);
-      } else {
-        alert('Invite sent successfully!');
+        await navigator.clipboard.writeText(result.inviteLink).catch(() => {});
+        alert(`Invite link copied to clipboard!\n\n${result.inviteLink}\n\nShare this link with the person you want to invite. It can only be used once.`);
       }
     } catch (err) {
       alert(err.message);
@@ -67,10 +61,15 @@ export default function FamilySettings() {
 
   const handleResendInvite = async (inviteId) => {
     try {
-      await api.resendInvite(currentFamily.id, inviteId);
-      alert('Invite resent!');
+      const result = await api.resendInvite(currentFamily.id, inviteId);
       const inv = await api.getInvites(currentFamily.id);
       setInvites(inv);
+      if (result.inviteLink) {
+        await navigator.clipboard.writeText(result.inviteLink).catch(() => {});
+        alert(`New invite link copied to clipboard!\n\n${result.inviteLink}`);
+      } else {
+        alert('New invite link generated!');
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -171,19 +170,15 @@ export default function FamilySettings() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {familyData.userRole === 'admin' && (
             <div className="px-6 py-4 border-b border-slate-100">
-              <form onSubmit={handleInvite} className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Invite by email..."
-                  required
-                />
-                <button type="submit" disabled={inviting} className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
-                  {inviting ? 'Sending...' : 'Invite'}
-                </button>
-              </form>
+              <button
+                onClick={handleInvite}
+                disabled={inviting}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+              >
+                <Link2 className="w-4 h-4" />
+                {inviting ? 'Generating...' : 'Generate Invite Link'}
+              </button>
+              <p className="text-xs text-slate-400 mt-2">Each link can only be used once. Share it with the person you want to invite.</p>
             </div>
           )}
           <div className="divide-y divide-slate-100">
@@ -223,14 +218,14 @@ export default function FamilySettings() {
           {invites.length === 0 ? (
             <div className="px-6 py-8 text-center text-slate-400">
               <Mail className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p>No invites sent yet</p>
+              <p>No invites yet</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {invites.map(invite => (
                 <div key={invite.id} className="px-6 py-3 flex items-center justify-between hover:bg-slate-50">
                   <div>
-                    <p className="font-medium text-sm text-slate-800">{invite.email}</p>
+                    <p className="font-medium text-sm text-slate-800">Invite #{invites.indexOf(invite) + 1}</p>
                     <p className="text-xs text-slate-400">
                       Status: <span className={`font-medium ${invite.status === 'accepted' ? 'text-green-600' : invite.status === 'pending' ? 'text-amber-600' : 'text-red-600'}`}>
                         {invite.status}
@@ -251,7 +246,7 @@ export default function FamilySettings() {
                         Copy Link
                       </button>
                       <button onClick={() => handleResendInvite(invite.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 rounded-lg font-medium">
-                        <RotateCcw className="w-3 h-3" /> Resend
+                        <RotateCcw className="w-3 h-3" /> Regenerate
                       </button>
                     </div>
                   )}

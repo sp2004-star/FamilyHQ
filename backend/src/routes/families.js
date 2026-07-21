@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const db = require('../database');
 const { authMiddleware } = require('../middleware/auth');
-const { sendInviteEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -86,11 +85,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
   res.json(family);
 });
 
-// Invite a member
+// Invite a member — generates a single-use invite link (no email sent)
 router.post('/:id/invite', authMiddleware, async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email is required' });
-
   const membership = await db.get(
     'SELECT * FROM family_members WHERE family_id = ? AND user_id = ? AND role = ?',
     [req.params.id, req.user.id, 'admin']
@@ -100,51 +96,21 @@ router.post('/:id/invite', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Only admins can invite members' });
   }
 
-  // Check if user is already a member
-  const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
-  if (existingUser) {
-    const existingMember = await db.get(
-      'SELECT * FROM family_members WHERE family_id = ? AND user_id = ?',
-      [req.params.id, existingUser.id]
-    );
-    if (existingMember) {
-      return res.status(409).json({ error: 'This user is already a member of this family' });
-    }
-  }
-
-  // Check for existing pending invite
-  const existingInvite = await db.get(
-    "SELECT * FROM invites WHERE family_id = ? AND email = ? AND status = 'pending' AND expires_at > NOW()",
-    [req.params.id, email.toLowerCase()]
-  );
-
-  if (existingInvite) {
-    return res.status(409).json({ error: 'A pending invite already exists for this email. You can resend it.' });
-  }
-
   const token = crypto.randomBytes(32).toString('hex');
   const inviteId = uuidv4();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   await db.run(
     'INSERT INTO invites (id, family_id, email, token, invited_by, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
-    [inviteId, req.params.id, email.toLowerCase(), token, req.user.id, expiresAt]
+    [inviteId, req.params.id, '', token, req.user.id, expiresAt]
   );
 
-  const family = await db.get('SELECT name FROM families WHERE id = ?', [req.params.id]);
   const inviteLink = `${process.env.FRONTEND_URL || ''}/invite/${token}`;
 
-  await sendInviteEmail({
-    to: email.toLowerCase(),
-    inviterName: req.user.name,
-    familyName: family.name,
-    inviteLink,
-  });
-
-  res.status(201).json({ message: 'Invite sent successfully', inviteId, inviteLink });
+  res.status(201).json({ message: 'Invite link created', inviteId, inviteLink });
 });
 
-// Resend an invite
+// Regenerate an invite link (new token, no email sent)
 router.post('/:id/invite/:inviteId/resend', authMiddleware, async (req, res) => {
   const membership = await db.get(
     'SELECT * FROM family_members WHERE family_id = ? AND user_id = ? AND role = ?',
@@ -152,7 +118,7 @@ router.post('/:id/invite/:inviteId/resend', authMiddleware, async (req, res) => 
   );
 
   if (!membership) {
-    return res.status(403).json({ error: 'Only admins can resend invites' });
+    return res.status(403).json({ error: 'Only admins can regenerate invites' });
   }
 
   const invite = await db.get('SELECT * FROM invites WHERE id = ? AND family_id = ?', [req.params.inviteId, req.params.id]);
@@ -163,17 +129,9 @@ router.post('/:id/invite/:inviteId/resend', authMiddleware, async (req, res) => 
 
   await db.run("UPDATE invites SET token = ?, expires_at = ?, status = 'pending' WHERE id = ?", [newToken, newExpiry, invite.id]);
 
-  const family = await db.get('SELECT name FROM families WHERE id = ?', [req.params.id]);
   const inviteLink = `${process.env.FRONTEND_URL || ''}/invite/${newToken}`;
 
-  await sendInviteEmail({
-    to: invite.email,
-    inviterName: req.user.name,
-    familyName: family.name,
-    inviteLink,
-  });
-
-  res.json({ message: 'Invite resent successfully' });
+  res.json({ message: 'New invite link generated', inviteLink });
 });
 
 // Get pending invites for a family
@@ -283,7 +241,6 @@ router.get('/invite-info/:token', async (req, res) => {
   res.json({
     familyName: invite.family_name,
     invitedByName: invite.invited_by_name,
-    email: invite.email,
   });
 });
 
