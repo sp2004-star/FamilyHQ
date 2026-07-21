@@ -40,6 +40,7 @@ export const api = {
   updateFamily: (id, data) => request(`/families/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   inviteMember: (familyId, data) => request(`/families/${familyId}/invite`, { method: 'POST', body: JSON.stringify(data) }),
   resendInvite: (familyId, inviteId) => request(`/families/${familyId}/invite/${inviteId}/resend`, { method: 'POST' }),
+  deleteInvite: (familyId, inviteId) => request(`/families/${familyId}/invites/${inviteId}`, { method: 'DELETE' }),
   getInvites: (familyId) => request(`/families/${familyId}/invites`),
   getInviteInfo: (token) => request(`/families/invite-info/${token}`),
   joinFamily: (token) => request(`/families/join/${token}`, { method: 'POST' }),

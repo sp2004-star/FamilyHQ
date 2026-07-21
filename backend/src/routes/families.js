@@ -166,6 +166,24 @@ router.get('/:id/invites', authMiddleware, async (req, res) => {
   res.json(invites);
 });
 
+// Delete an invite
+router.delete('/:id/invites/:inviteId', authMiddleware, async (req, res) => {
+  const membership = await db.get(
+    'SELECT * FROM family_members WHERE family_id = ? AND user_id = ? AND role = ?',
+    [req.params.id, req.user.id, 'admin']
+  );
+
+  if (!membership) {
+    return res.status(403).json({ error: 'Only admins can delete invites' });
+  }
+
+  const invite = await db.get('SELECT * FROM invites WHERE id = ? AND family_id = ?', [req.params.inviteId, req.params.id]);
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+
+  await db.run('DELETE FROM invites WHERE id = ?', [req.params.inviteId]);
+  res.json({ message: 'Invite deleted' });
+});
+
 // Accept an invite (via token)
 router.post('/join/:token', authMiddleware, async (req, res) => {
   const invite = await db.get('SELECT * FROM invites WHERE token = ?', [req.params.token]);

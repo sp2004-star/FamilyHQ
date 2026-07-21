@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFamily } from '../context/FamilyContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import { Users, Crown, UserMinus, Link2, Mail, RotateCcw, Bell, Check, Trash2, Edit3, Save, X } from 'lucide-react';
+import { Users, Crown, UserMinus, Link2, Mail, RotateCcw, Bell, Check, Trash2, Edit3, Save, X, Copy } from 'lucide-react';
 
 export default function FamilySettings() {
   const { currentFamily, loadFamilies, switchFamily } = useFamily();
@@ -68,9 +68,17 @@ export default function FamilySettings() {
       if (result.inviteLink) {
         await navigator.clipboard.writeText(result.inviteLink).catch(() => {});
         setGeneratedLink(result.inviteLink);
-      } else {
-        alert('New invite link generated!');
       }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteInvite = async (inviteId) => {
+    try {
+      await api.deleteInvite(currentFamily.id, inviteId);
+      const inv = await api.getInvites(currentFamily.id);
+      setInvites(inv);
     } catch (err) {
       alert(err.message);
     }
@@ -249,14 +257,18 @@ export default function FamilySettings() {
                         onClick={() => {
                           const link = `${window.location.origin}/j/${invite.token}`;
                           navigator.clipboard.writeText(link);
-                          alert('Invite link copied!');
+                          setGeneratedLink(link);
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                        className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg"
+                        title="Copy link"
                       >
-                        Copy Link
+                        <Copy className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleResendInvite(invite.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 rounded-lg font-medium">
-                        <RotateCcw className="w-3 h-3" /> Regenerate
+                      <button onClick={() => handleResendInvite(invite.id)} className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Regenerate link">
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDeleteInvite(invite.id)} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Delete invite">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   )}
