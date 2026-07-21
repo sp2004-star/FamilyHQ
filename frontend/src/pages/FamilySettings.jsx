@@ -11,6 +11,7 @@ export default function FamilySettings() {
   const [invites, setInvites] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [inviting, setInviting] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
@@ -50,7 +51,7 @@ export default function FamilySettings() {
       setInvites(inv);
       if (result.inviteLink) {
         await navigator.clipboard.writeText(result.inviteLink).catch(() => {});
-        alert(`Invite link copied to clipboard!\n\n${result.inviteLink}\n\nShare this link with the person you want to invite. It can only be used once.`);
+        setGeneratedLink(result.inviteLink);
       }
     } catch (err) {
       alert(err.message);
@@ -66,7 +67,7 @@ export default function FamilySettings() {
       setInvites(inv);
       if (result.inviteLink) {
         await navigator.clipboard.writeText(result.inviteLink).catch(() => {});
-        alert(`New invite link copied to clipboard!\n\n${result.inviteLink}`);
+        setGeneratedLink(result.inviteLink);
       } else {
         alert('New invite link generated!');
       }
@@ -178,6 +179,15 @@ export default function FamilySettings() {
                 <Link2 className="w-4 h-4" />
                 {inviting ? 'Generating...' : 'Generate Invite Link'}
               </button>
+              {generatedLink && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                  <p className="text-xs text-green-700 font-medium mb-1">Link copied to clipboard! Share it:</p>
+                  <a href={generatedLink} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 hover:text-primary-800 underline break-all">
+                    {generatedLink}
+                  </a>
+                  <button onClick={() => setGeneratedLink(null)} className="block mt-2 text-xs text-slate-400 hover:text-slate-600">Dismiss</button>
+                </div>
+              )}
               <p className="text-xs text-slate-400 mt-2">Each link can only be used once. Share it with the person you want to invite.</p>
             </div>
           )}
