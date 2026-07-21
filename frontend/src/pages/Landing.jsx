@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Shield, FolderOpen, Clock, LayoutDashboard, Users, Lock } from 'lucide-react';
+import { Shield, FolderOpen, Clock, LayoutDashboard, Users, Lock, ArrowRight, Sparkles } from 'lucide-react';
 
 const features = [
   {
@@ -36,96 +36,92 @@ const features = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50">
-      {/* Nav */}
-      <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0a0a1a] text-white overflow-hidden relative">
+      {/* Ambient background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-primary-600/20 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-blue-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-primary-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      {/* Nav - glass */}
+      <nav className="relative z-10 max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center">
+          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
             <Shield className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-slate-900">FamilyVault</span>
+          <span className="text-xl font-bold text-white">FamilyVault</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/login"
-            className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-primary-700 transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            to="/signup"
-            className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
-          >
-            Get Started
-          </Link>
-        </div>
+        <Link
+          to="/login"
+          className="px-5 py-2 text-sm font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl backdrop-blur-md transition-all"
+        >
+          Sign In
+        </Link>
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 pt-16 pb-20 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-50 border border-primary-100 rounded-full text-xs font-medium text-primary-700 mb-6">
-          <Shield className="w-3.5 h-3.5" />
+      <section className="relative z-10 max-w-4xl mx-auto px-6 pt-20 pb-24 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-primary-300 mb-8 backdrop-blur-sm">
+          <Sparkles className="w-3.5 h-3.5" />
           Private. Organized. Family-first.
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
-          Your family's important<br />documents, <span className="text-primary-600">all in one place</span>
+        <h1 className="text-4xl sm:text-6xl font-extrabold leading-[1.1] tracking-tight">
+          Your family's important<br />documents, <span className="bg-gradient-to-r from-primary-400 to-blue-400 bg-clip-text text-transparent">all in one place</span>
         </h1>
-        <p className="mt-5 text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-6 text-lg text-white/50 max-w-2xl mx-auto leading-relaxed">
           A private vault where family members can securely store, organize, and share critical documents — from insurance policies to medical records — with the people who matter most.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <div className="mt-10">
           <Link
             to="/signup"
-            className="px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all shadow-md hover:shadow-lg text-sm"
+            className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-2xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-xl shadow-primary-500/25 hover:shadow-primary-500/40 text-sm"
           >
             Create Your Vault
-          </Link>
-          <Link
-            to="/login"
-            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all text-sm"
-          >
-            Sign In
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-slate-900">Everything your family needs</h2>
-          <p className="mt-2 text-slate-500">Simple, secure, and built for families.</p>
+      {/* Features - glass cards */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-28">
+        <div className="text-center mb-14">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">Everything your family needs</h2>
+          <p className="mt-3 text-white/40">Simple, secure, and built for families.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f) => (
-            <div key={f.title} className="bg-white rounded-2xl border border-slate-100 p-6 hover:shadow-md hover:border-slate-200 transition-all">
-              <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mb-4">
-                <f.icon className="w-5 h-5 text-primary-600" />
+            <div
+              key={f.title}
+              className="group bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:bg-white/[0.06] hover:border-white/[0.15] transition-all backdrop-blur-md"
+            >
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:border-primary-500/30 transition-colors">
+                <f.icon className="w-5 h-5 text-primary-400" />
               </div>
-              <h3 className="font-semibold text-slate-900 mb-1.5">{f.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+              <h3 className="font-semibold text-white mb-1.5">{f.title}</h3>
+              <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-4xl mx-auto px-6 pb-20 text-center">
-        <div className="bg-primary-600 rounded-3xl p-10 sm:p-14 text-white">
-          <h2 className="text-2xl sm:text-3xl font-bold">Ready to secure your family's documents?</h2>
-          <p className="mt-3 text-primary-100 max-w-lg mx-auto">
+      {/* CTA - glass */}
+      <section className="relative z-10 max-w-4xl mx-auto px-6 pb-24 text-center">
+        <div className="bg-white/[0.04] border border-white/[0.1] backdrop-blur-xl rounded-3xl p-10 sm:p-14">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">Ready to secure your family's documents?</h2>
+          <p className="mt-3 text-white/40 max-w-lg mx-auto">
             Free to use. Set up your vault in under a minute.
           </p>
           <Link
             to="/signup"
-            className="inline-block mt-6 px-6 py-3 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-colors text-sm shadow-sm"
+            className="inline-flex items-center gap-2 mt-7 px-7 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-2xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-xl shadow-primary-500/25 text-sm"
           >
             Get Started — It's Free
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 py-6 text-center text-xs text-slate-400">
+      <footer className="relative z-10 border-t border-white/[0.06] py-6 text-center text-xs text-white/30">
         © {new Date().getFullYear()} FamilyVault. Built for families, by families.
       </footer>
     </div>
