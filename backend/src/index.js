@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 
+const db = require('./database');
 const authRoutes = require('./routes/auth');
 const familyRoutes = require('./routes/families');
 const documentRoutes = require('./routes/documents');
@@ -22,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
@@ -60,8 +61,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Family Document Vault API running on port ${PORT}`);
-  console.log(`   Frontend URL: ${process.env.FRONTEND_URL}`);
-  startReminderScheduler();
+// Initialize database then start server
+db.initialize().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Family Document Vault API running on port ${PORT}`);
+    console.log(`   Frontend URL: ${process.env.FRONTEND_URL}`);
+    startReminderScheduler();
+  });
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });

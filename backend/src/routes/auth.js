@@ -22,7 +22,7 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
+    const existing = await db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existing) {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
@@ -30,9 +30,7 @@ router.post('/signup', async (req, res) => {
     const id = uuidv4();
     const passwordHash = await bcrypt.hash(password, 12);
 
-    db.prepare('INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)').run(
-      id, email.toLowerCase(), passwordHash, name
-    );
+    await db.run('INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)', [id, email.toLowerCase(), passwordHash, name]);
 
     const token = jwt.sign({ id, email: email.toLowerCase(), name }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -52,7 +50,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -76,8 +74,8 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user profile
-router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare('SELECT id, email, name, created_at FROM users WHERE id = ?').get(req.user.id);
+router.get('/me', authMiddleware, async (req, res) => {
+  const user = await db.get('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
 });
@@ -85,10 +83,10 @@ router.get('/me', authMiddleware, (req, res) => {
 // Update profile
 router.put('/me', authMiddleware, async (req, res) => {
   const { name, currentPassword, newPassword } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
 
   if (name) {
-    db.prepare('UPDATE users SET name = ?, updated_at = datetime("now") WHERE id = ?').run(name, req.user.id);
+    await db.run('UPDATE users SET name = ?, updated_at = NOW() WHERE id = ?', [name, req.user.id]);
   }
 
   if (currentPassword && newPassword) {
@@ -96,10 +94,10 @@ router.put('/me', authMiddleware, async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
     if (newPassword.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
     const hash = await bcrypt.hash(newPassword, 12);
-    db.prepare('UPDATE users SET password_hash = ?, updated_at = datetime("now") WHERE id = ?').run(hash, req.user.id);
+    await db.run('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, req.user.id]);
   }
 
-  const updated = db.prepare('SELECT id, email, name, created_at FROM users WHERE id = ?').get(req.user.id);
+  const updated = await db.get('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.user.id]);
   res.json(updated);
 });
 
