@@ -3,35 +3,17 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const sharp = require('sharp');
 const db = require('../database');
 const { authMiddleware } = require('../middleware/auth');
 const { sendNewSharedDocEmail } = require('../services/email');
+const { uploadFile, downloadFile, deleteFile } = require('../services/storage');
 
 const router = express.Router();
 
-// Set up multer for file uploads
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const thumbDir = path.join(__dirname, '..', '..', 'thumbnails');
-if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userDir = path.join(uploadDir, req.user.id);
-    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
-    cb(null, userDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
-
+// Use memory storage - files go to buffer, then to Supabase
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
@@ -71,12 +53,16 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     if (!membership) return res.status(403).json({ error: 'You are not a member of this family' });
 
     const docId = uuidv4();
-    const filePath = path.relative(uploadDir, req.file.path);
+    const ext = path.extname(req.file.originalname);
+    const storagePath = `${familyId}/${req.user.id}/${docId}${ext}`;
+
+    // Upload to Supabase Storage
+    await uploadFile(storagePath, req.file.buffer, req.file.mimetype);
 
     await db.run(`
       INSERT INTO documents (id, family_id, uploaded_by, name, original_filename, file_path, mime_type, file_size, category, document_type, visibility, expiry_date)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [docId, familyId, req.user.id, name, req.file.originalname, filePath,
+    `, [docId, familyId, req.user.id, name, req.file.originalname, storagePath,
         req.file.mimetype, req.file.size, category, documentType || 'Other',
         visibility || 'private', expiryDate || null]);
 
@@ -170,25 +156,17 @@ router.get('/:id/thumbnail', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'Thumbnails only available for image files' });
   }
 
-  const absFilePath = path.join(uploadDir, doc.file_path);
-  if (!fs.existsSync(absFilePath)) return res.status(404).json({ error: 'File not found' });
-
-  const thumbPath = path.join(thumbDir, `${doc.id}.webp`);
-  if (fs.existsSync(thumbPath)) {
-    res.set('Content-Type', 'image/webp');
-    res.set('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(thumbPath);
-  }
-
   try {
-    await sharp(absFilePath)
+    // Download from Supabase, generate thumbnail on-the-fly
+    const fileBuffer = await downloadFile(doc.file_path);
+    const thumbBuffer = await sharp(fileBuffer)
       .resize(160, 160, { fit: 'cover', position: 'center' })
       .webp({ quality: 75 })
-      .toFile(thumbPath);
+      .toBuffer();
 
     res.set('Content-Type', 'image/webp');
     res.set('Cache-Control', 'public, max-age=86400');
-    res.sendFile(thumbPath);
+    res.send(thumbBuffer);
   } catch (err) {
     console.error('Thumbnail generation error:', err.message);
     res.status(500).json({ error: 'Failed to generate thumbnail' });
@@ -207,10 +185,15 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'This document is private' });
   }
 
-  const absFilePath = path.join(uploadDir, doc.file_path);
-  if (!fs.existsSync(absFilePath)) return res.status(404).json({ error: 'File not found on disk' });
-
-  res.download(absFilePath, doc.original_filename);
+  try {
+    const fileBuffer = await downloadFile(doc.file_path);
+    res.set('Content-Type', doc.mime_type || 'application/octet-stream');
+    res.set('Content-Disposition', `attachment; filename="${doc.original_filename}"`);
+    res.send(fileBuffer);
+  } catch (err) {
+    console.error('Download error:', err.message);
+    res.status(404).json({ error: 'File not found in storage' });
+  }
 });
 
 // Update a document
@@ -262,8 +245,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Only the owner or admin can delete this document' });
   }
 
-  const absFilePath = path.join(uploadDir, doc.file_path);
-  if (fs.existsSync(absFilePath)) fs.unlinkSync(absFilePath);
+  // Delete from Supabase Storage
+  await deleteFile(doc.file_path);
 
   await db.run('DELETE FROM documents WHERE id = ?', [req.params.id]);
   res.json({ message: 'Document deleted' });
@@ -343,7 +326,7 @@ router.get('/shared/:token', async (req, res) => {
 // Download externally shared document (public)
 router.get('/shared/:token/download', async (req, res) => {
   const share = await db.get(`
-    SELECT es.*, d.original_filename, d.file_path
+    SELECT es.*, d.original_filename, d.file_path, d.mime_type
     FROM external_shares es
     JOIN documents d ON d.id = es.document_id
     WHERE es.token = ?
@@ -353,10 +336,15 @@ router.get('/shared/:token/download', async (req, res) => {
   if (share.revoked) return res.status(410).json({ error: 'This share link has been revoked' });
   if (new Date(share.expires_at) < new Date()) return res.status(410).json({ error: 'This share link has expired' });
 
-  const absFilePath = path.join(uploadDir, share.file_path);
-  if (!fs.existsSync(absFilePath)) return res.status(404).json({ error: 'File not found' });
-
-  res.download(absFilePath, share.original_filename);
+  try {
+    const fileBuffer = await downloadFile(share.file_path);
+    res.set('Content-Type', share.mime_type || 'application/octet-stream');
+    res.set('Content-Disposition', `attachment; filename="${share.original_filename}"`);
+    res.send(fileBuffer);
+  } catch (err) {
+    console.error('Shared download error:', err.message);
+    res.status(404).json({ error: 'File not found in storage' });
+  }
 });
 
 // Dashboard data

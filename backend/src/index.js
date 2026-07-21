@@ -11,6 +11,7 @@ const familyRoutes = require('./routes/families');
 const documentRoutes = require('./routes/documents');
 const notificationRoutes = require('./routes/notifications');
 const { startReminderScheduler } = require('./services/scheduler');
+const { initStorage } = require('./services/storage');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,8 +42,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve uploaded files preview (authenticated via query token for preview)
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 
 // Serve frontend in production
 const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
@@ -61,14 +61,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Initialize database then start server
-db.initialize().then(() => {
+// Initialize database and storage then start server
+db.initialize().then(async () => {
+  await initStorage();
   app.listen(PORT, () => {
     console.log(`🚀 Family Document Vault API running on port ${PORT}`);
     console.log(`   Frontend URL: ${process.env.FRONTEND_URL}`);
     startReminderScheduler();
   });
 }).catch(err => {
-  console.error('Failed to initialize database:', err);
+  console.error('Failed to initialize:', err);
   process.exit(1);
 });
