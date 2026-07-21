@@ -5,6 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../database');
 const { authMiddleware } = require('../middleware/auth');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'familyhq-default-secret-change-in-production';
+
 const router = express.Router();
 
 // Sign up
@@ -32,7 +34,7 @@ router.post('/signup', async (req, res) => {
       id, email.toLowerCase(), passwordHash, name
     );
 
-    const token = jwt.sign({ id, email: email.toLowerCase(), name }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id, email: email.toLowerCase(), name }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({ token, user: { id, email: email.toLowerCase(), name } });
   } catch (error) {
@@ -62,7 +64,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 

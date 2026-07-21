@@ -2,10 +2,13 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const dbDir = path.join(__dirname, '..', 'data');
+// Use DATABASE_PATH env var if set (e.g. for persistent disk on Render), otherwise default to local data/
+const dbDir = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new Database(path.join(dbDir, 'familyvault.db'));
+const dbFile = path.join(dbDir, 'familyvault.db');
+console.log(`📂 Database location: ${dbFile}`);
+const db = new Database(dbFile);
 
 // Enable WAL mode for better concurrent performance
 db.pragma('journal_mode = WAL');
